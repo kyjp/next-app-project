@@ -1,6 +1,12 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from decouple import config
+
+CSRF_KEY = config('CSRF_KEY')
+
+class CsrfSettings(BaseModel):
+    secret_key: str = CSRF_KEY
 
 class ItemBody(BaseModel):
   amount: float
@@ -10,15 +16,14 @@ class ItemBody(BaseModel):
 
 class Item(ItemBody):
   id: str
-  item_id: int
-  user_id: int
-  category_id: int
+  user_id: Optional[str] = None
+  category_id: Optional[str] = None
   class Config:
       orm_mode = True
 
 class ItemCreate(ItemBody):
-  user_id: int
-  category_id: int
+  user_id: Optional[str] = None
+  category_id: Optional[str] = None
 
 class SuccessMsg(BaseModel):
   message: str
@@ -29,6 +34,10 @@ class UserBody(BaseModel):
 
 class UserInfo(BaseModel):
   id: Optional[str] = None
+  email: str
+
+class UserApiInfo(BaseModel):
+  id: str
   email: str
 
 class UserDelete(BaseModel):
@@ -56,3 +65,6 @@ class Category(CategoryBody):
   id: str
   class Config:
     orm_mode = True
+
+class Csrf(BaseModel):
+  csrf_token: str

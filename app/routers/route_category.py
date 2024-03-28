@@ -2,30 +2,34 @@ from fastapi import APIRouter
 from fastapi import Response, Request, HTTPException
 from fastapi.encoders import jsonable_encoder
 from schemas import Category, CategoryBody, SuccessMsg
-from database import db_create_category, db_get_categories, db_get_single_category, db_update_category, db_delete_category
+from database import db_create_category, db_get_categories, db_get_single_category, db_update_category, db_delete_category, db_get_single_user
 from starlette.status import HTTP_201_CREATED
 from typing import List
+from auth_utils import AuthJwtCsrf
 
 router = APIRouter()
+auth = AuthJwtCsrf()
 
 @router.post('/api/category', response_model=Category)
-async def create_item(request: Request, response: Response, data: CategoryBody):
-  item = jsonable_encoder(data)
-  res = await db_create_category(item)
+async def create_category(request: Request, response: Response, data: CategoryBody):
+  category = jsonable_encoder(data)
+  res = await db_create_category(category)
   response.status_code = HTTP_201_CREATED
   if res:
     return res
   raise HTTPException(
-    status_code=404, detail='itemの作成に失敗しました'
+    status_code=404, detail='categoryの作成に失敗しました'
   )
 
 @router.get('/api/category', response_model=List[Category])
-async def get_items():
-  res = await db_get_categories()
+async def get_category(request: Request):
+  _, subject = auth.verify_update_jwt(request)
+  user = await db_get_single_user(subject)
+  res = await db_get_categories(str(user['_id']))
   return res
 
 @router.get("/api/category/{id}", response_model=Category)
-async def get_single_item(id: str):
+async def get_single_category(id: str):
   res = await db_get_single_category(id)
   if res:
     return res
@@ -34,9 +38,9 @@ async def get_single_item(id: str):
   )
 
 @router.put("/api/category/{id}", response_model=Category)
-async def update_item(id: str, data: CategoryBody):
-  item = jsonable_encoder(data)
-  res = await db_update_category(id, item)
+async def update_category(id: str, data: CategoryBody):
+  category = jsonable_encoder(data)
+  res = await db_update_category(id, category)
   if res:
     return res
   raise HTTPException(
